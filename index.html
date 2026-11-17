@@ -98,57 +98,65 @@ function parseTag(raw){
  if(/^\$?\d+(\.\d{1,2})?$/.test(raw))return {name:'Pokémon card',price:raw.replace('$','')};
  return null;}
 
+
 let scanCooldown=false;
 
 $('startScan').onclick=async()=>{
  if(!('NDEFReader' in window)){
-  $('scanStatus').textContent='Web NFC is not available. Open this page in Chrome on Android using HTTPS.';
+  $('scanStatus').textContent='Web NFC is not available. Use Chrome on Android over HTTPS.';
   return;
  }
 
  try{
   reader=new NDEFReader();
-  await reader.scan();
-  scanning=true;
-  $('scanStatus').textContent='Ready! Hold an NFC tag against your phone.';
 
   reader.onreading=event=>{
    if(!scanning||scanCooldown)return;
-   scanCooldown=true;
 
+   scanCooldown=true;
    let texts=[];
+
    for(const r of event.message.records){
-    if(r.recordType==='text'){
-     try{
+    try{
+     if(r.recordType==='text'){
       texts.push(new TextDecoder(r.encoding||'utf-8').decode(r.data));
-     }catch(e){}
-    }
+     }
+    }catch(e){}
    }
 
-   const parsed=parseTag(texts.join(' ').trim());
+   const raw=texts.join(' ').trim();
+   $('scanStatus').textContent='NFC tag detected: '+(raw||'No text data');
+
+   const parsed=parseTag(raw);
 
    if(parsed){
     addCard(parsed.name,parsed.price);
    }else{
-    $('scanStatus').textContent='Tag read, but no price found.';
+    $('scanStatus').textContent='Tag detected, but no valid card name and price found.';
    }
 
    setTimeout(()=>{
     scanCooldown=false;
     if(scanning){
-     $('scanStatus').textContent='Ready! Hold an NFC tag against your phone.';
+     $('scanStatus').textContent='Ready! Hold another NFC tag against your phone.';
     }
-   },1000);
+   },1200);
   };
 
   reader.onreadingerror=()=>{
-   $('scanStatus').textContent='Could not read that tag. Try again.';
+   $('scanStatus').textContent='NFC read error. Try again.';
   };
 
+  await reader.scan();
+  scanning=true;
+  $('scanStatus').textContent='Ready! Hold an NFC tag against your phone.';
+
  }catch(e){
+  scanning=false;
   $('scanStatus').textContent='Scanner error: '+e.message;
  }
 };
+
 
 $('stopScan').onclick=()=>{scanning=false;reader=null;$('scanStatus').textContent='Scanner stopped. Tap Start NFC Scanner to scan again.'};
 $('undo').onclick=()=>{if(!lastAdded){$('scanStatus').textContent='Nothing to undo.';return}const i=cart.findIndex(x=>x.name===lastAdded.name&&x.price===lastAdded.price);if(i>=0){if(cart[i].qty>1)cart[i].qty--;else cart.splice(i,1);save()}lastAdded=null;$('scanStatus').textContent='Last scan undone.'};
