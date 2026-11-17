@@ -96,7 +96,7 @@ function parseTag(raw){
  try{const j=JSON.parse(raw);if(j.name&&j.price!==undefined)return {name:j.name,price:j.price}}catch(e){}
  const parts=raw.split('|');if(parts.length>=2)return {name:parts.slice(0,-1).join('|').trim(),price:parts[parts.length-1].replace('$','').trim()};
  if(/^\$?\d+(\.\d{1,2})?$/.test(raw))return {name:'Pokémon card',price:raw.replace('$','')};
- return null;
+ return null;}
 
 let scanCooldown=false;
 
